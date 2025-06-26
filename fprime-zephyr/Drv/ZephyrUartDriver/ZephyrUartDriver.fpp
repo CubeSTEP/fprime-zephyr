@@ -1,5 +1,5 @@
 # Assumes the standard structure where fprime and fprime-zephyr are parallel directories
-include "../../../../fprime/Drv/Interfaces/ByteStreamDriver.fpp"
+# include "../../../../fprime/Drv/Interfaces/ByteStreamDriver.fpp"
 
 module Zephyr {
 

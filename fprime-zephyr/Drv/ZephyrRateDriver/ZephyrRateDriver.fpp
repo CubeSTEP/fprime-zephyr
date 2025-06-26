@@ -1,5 +1,5 @@
 # Assumes the standard structure where fprime and fprime-zephyr are parallel directories
-include "../../../../fprime/Drv/Interfaces/Tick.fpp"
+# include "../../../../fprime/Drv/Interfaces/Tick.fpp"
 
 module Zephyr {
 
