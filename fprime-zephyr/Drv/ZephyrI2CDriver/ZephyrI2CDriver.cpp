@@ -37,32 +37,20 @@ namespace Zephyr {
     // Handler implementations for typed input ports
     // ----------------------------------------------------------------------
 
-    Drv::I2cStatus ZephyrI2CDriver::read_handler(FwIndexType portNum, U32 addr,
+    Drv::I2cStatus ZephyrI2CDriver ::i2cread_handler(FwIndexType portNum, U16 addr,
                                                   Fw::Buffer &serBuffer) {
       int status = i2c_read_dt(&this->m_device, serBuffer.getData(), serBuffer.getSize()); 
       if(status != 0){
         printk("I2C read error\n");
-        return Drv::I2cStatus::I2C_READ_ERR;
       }
       return Drv::I2cStatus::I2C_OK;
     }
 
-    Drv::I2cStatus ZephyrI2CDriver::write_handler(FwIndexType portNum, U32 addr,
+    Drv::I2cStatus ZephyrI2CDriver ::i2cwrite_handler(FwIndexType portNum, U16 addr,
                                                   Fw::Buffer &serBuffer) {
       int status = i2c_write_dt(&this->m_device, serBuffer.getData(), serBuffer.getSize()); 
       if(status != 0){
         printk("I2C write error\n");
-        return Drv::I2cStatus::I2C_WRITE_ERR;
-      }
-      return Drv::I2cStatus::I2C_OK;
-    }
-
-    Drv::I2cStatus ZephyrI2CDriver::writeRead_handler(FwIndexType portNum, U32 addr, Fw::Buffer& writeBuffer, Fw::Buffer& readBuffer) {
-
-      int status = i2c_write_read_dt(&this->m_device, writeBuffer.getData(), writeBuffer.getSize(), readBuffer.getData(), readBuffer.getSize());
-      if(status != 0) {
-        printk("I2C read write error\n");
-        return Drv::I2cStatus::I2C_OTHER_ERR;
       }
       return Drv::I2cStatus::I2C_OK;
     }

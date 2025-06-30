@@ -1,11 +1,8 @@
-# Assumes the standard structure where fprime and fprime-zephyr are parallel directories
-# include "../../../../fprime/Drv/Interfaces/ByteStreamDriver.fpp"
-
 module Zephyr {
 
-  @ Zephyr UART Driver
   passive component ZephyrUartDriver {
-
+    # Assumes the standard structure where fprime and fprime-zephyr are parallel
+    # directories
     import Drv.ByteStreamDriver
 
     @ Polled sched-in for reading UART
