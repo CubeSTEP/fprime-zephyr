@@ -2,8 +2,11 @@
 // \title Os/Zephyr/DefaultFile.cpp
 // \brief sets default Os::File to no-op zephyr implementation via linker
 // ======================================================================
+#include "Os/File.hpp"
 #include "fprime-zephyr/Os/File.hpp"
+#include "Os/FileSystem.hpp"
 #include "fprime-zephyr/Os/FileSystem.hpp"
+#include "Os/Directory.hpp"
 #include "fprime-zephyr/Os/Directory.hpp"
 #include "Os/Delegate.hpp"
 namespace Os {
