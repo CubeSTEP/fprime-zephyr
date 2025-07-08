@@ -16,9 +16,11 @@ register_fprime_config(
         Os_StringFormat_Zephyr_snprintk
         Os_Console_Zephyr
         Os_File_Zephyr
+        # Os_File_Posix
         
 
         # Can remain stubs for now
+        Os_File_Stub
         Os_Cpu_Stub
         Os_Memory_Stub
     INTERFACE # No buildable files generated

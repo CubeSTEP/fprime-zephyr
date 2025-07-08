@@ -14,41 +14,6 @@ register_fprime_implementation(
         Os_Task
 )
 
-# register_fprime_implementation(
-#         Os_File_Zephyr
-#     SOURCES
-#         "${CMAKE_CURRENT_LIST_DIR}/File.cpp"
-#         "${CMAKE_CURRENT_LIST_DIR}/FileSystem.cpp"
-#         "${CMAKE_CURRENT_LIST_DIR}/Directory.cpp"
-#         "${CMAKE_CURRENT_LIST_DIR}/DefaultFile.cpp"
-#     HEADERS 
-#          "${CMAKE_CURRENT_LIST_DIR}/File.hpp"
-#          "${CMAKE_CURRENT_LIST_DIR}/FileSystem.hpp"
-#          "${CMAKE_CURRENT_LIST_DIR}/Directory.hpp"
-#     DEPENDS
-#         Fw_Types
-#         kernel
-#     IMPLEMENTS 
-#         Os_File
-# )
-
-# register_fprime_implementation(
-#         Os_FileSystem_Zephyr
-#     SOURCES
-#         "${CMAKE_CURRENT_LIST_DIR}/FileSystem.cpp"
-#         "${CMAKE_CURRENT_LIST_DIR}/Directory.cpp"
-#         "${CMAKE_CURRENT_LIST_DIR}/DefaultFile.cpp"
-#     HEADERS 
-#          "${CMAKE_CURRENT_LIST_DIR}/File.hpp"
-#          "${CMAKE_CURRENT_LIST_DIR}/FileSystem.hpp"
-#          "${CMAKE_CURRENT_LIST_DIR}/Directory.hpp"
-#     DEPENDS
-#         Fw_Types
-#         kernel
-#     IMPLEMENTS 
-#         Os_File
-# )
-
 register_os_implementation("File;FileSystem;Directory" Zephyr)
 
 # register_fprime_implementation(
