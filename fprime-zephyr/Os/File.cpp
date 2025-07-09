@@ -54,6 +54,7 @@ namespace File {
 
                 if(fs_stat(filepath, &entry) == 0 && ZephyrFile::OverwriteType::NO_OVERWRITE) {
                     k_free(file);
+                    file = nullptr;
                     status = Os::File::Status::FILE_EXISTS;
                     return status;
                 }
@@ -73,9 +74,10 @@ namespace File {
         
         descriptor = fs_open(file, filepath, mode_flags);
         if (descriptor < 0) {
-            DEBUG_PRINT("Error opening file %s: %d\n", filepath, descriptor);
+            DEBUG_PRINT("Error opening file %s: %d\n", filepath, descriptor); // Remove later
 
             k_free(file);
+            file = nullptr;
             status = NOT_OPENED; // Set file status to NOT_OPENED for now
         }
 
@@ -84,7 +86,20 @@ namespace File {
         return status;
     }
 
-    void ZephyrFile::close() {}
+    void ZephyrFile::close() {
+        if(ZephyrFileHandle::INVALID_FILE_DESCRIPTOR == this->m_handle.m_file_descriptor) {
+            return;
+        }
+        struct fs_file_t *file = reinterpret_cast<struct fs_file_t *>(this->m_handle.m_file_descriptor);
+        int res = fs_close(file);
+        if(res < 0) {
+            DEBUG_PRINT("Error closing file: %d\n", res); // Remove Later
+        }
+        FW_ASSERT(res == 0, res);
+        k_free(file);
+        file = nullptr;
+        this->m_handle.m_file_descriptor = ZephyrFileHandle::INVALID_FILE_DESCRIPTOR;
+    }
 
     ZephyrFile::Status ZephyrFile::size(FwSizeType &size_result) {
         Status status = Status::NOT_SUPPORTED;
