@@ -165,7 +165,52 @@ namespace File {
     }
 
     ZephyrFile::Status ZephyrFile::preallocate(FwSizeType offset, FwSizeType length) {
-        Status status = Status::NOT_SUPPORTED;
+        Status status = NOT_SUPPORTED;
+
+        // Check for overflow
+        if ((length > SSIZE_T_MAX_LIMIT) ||
+            (offset > SSIZE_T_MAX_LIMIT) ||
+            (std::numeric_limits<ssize_t>::max() - length) < offset) {
+            return BAD_SIZE;
+        }
+
+        FwSizeType file_size = 0;
+        status = this->size(file_size);
+        if (status != OP_OK) {
+            return status;
+        }
+
+        FwSizeType file_position = 0;
+        status = this->position(file_position);
+        if (status != OP_OK) {
+            return status;
+        }
+
+        // Only allocate when file size is less than the allocation
+        if (file_size < (offset + length)) {
+            FwSizeType write_length = (offset + length) - file_size;
+            // Seek to end of file
+            status = this->seek(static_cast<FwSignedSizeType>(file_size), SeekType::ABSOLUTE);
+            if (status != OP_OK) {
+                return status;
+            }
+            // Write zeros to extend file
+            static const U8 zero_byte = 0;
+            for (FwSizeType i = 0; i < write_length; i++) {
+                FwSizeType write_size = 1;
+                status = this->write(&zero_byte, write_size, WaitType::NO_WAIT);
+                if (status != OP_OK || write_size != 1) {
+                    break;
+                }
+            }
+            // Return to original position
+            if (status == OP_OK) {
+                status = this->seek(static_cast<FwSignedSizeType>(file_position), SeekType::ABSOLUTE);
+            }
+        } else {
+            status = OP_OK;
+        }
+
         return status;
     }
 
