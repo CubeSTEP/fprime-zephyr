@@ -170,21 +170,85 @@ namespace File {
     }
 
     ZephyrFile::Status ZephyrFile::seek(FwSignedSizeType offset, SeekType seekType) {
-        Status status = Status::NOT_SUPPORTED;
+        if(!this->_isOpen()) return NOT_OPENED;
+
+        Status status = OP_OK;
+        if (offset > std::numeric_limits<off_t>::max()) {
+            status = BAD_SIZE;
+        } else {
+            int res = fs_seek(this->m_handle.m_file_ptr, static_cast<off_t>(offset), (seekType == SeekType::ABSOLUTE) ? FS_SEEK_SET : FS_SEEK_CUR);
+            // int errno_store = errno;
+            if (res < 0) {
+                status = NOT_SUPPORTED; // TODO
+                // status = Os::Posix::errno_to_file_status(errno_store);
+            } 
+            // else if ((seekType == SeekType::ABSOLUTE) && (actual != offset)) {
+            //     status = Os::File::Status::OTHER_ERROR;
+            // }
+        }
         return status;
     }
 
     ZephyrFile::Status ZephyrFile::flush() {
-        Status status = Status::NOT_SUPPORTED;
+        if(!this->_isOpen()) return NOT_OPENED;
+
+        Status status = OP_OK;
+
+        int res = fs_sync(this->m_handle.m_file_ptr);
+        if (res < 0) {
+            status = NOT_SUPPORTED; // TODO
+            // int errno_store = errno;
+            // status = Os::Posix::errno_to_file_status(errno_store);
+        }
         return status;
     }
 
     ZephyrFile::Status ZephyrFile::read(U8 *buffer, FwSizeType &size, ZephyrFile::WaitType wait) {
-        Status status = Status::NOT_SUPPORTED;
+        if(!this->_isOpen()) return NOT_OPENED;
+        
+        Status status = OP_OK;
+        FwSizeType accumulated = 0;
+        // Loop up to 2 times for each by, bounded to prevent overflow
+        const FwSizeType maximum = (size > (std::numeric_limits<FwSizeType>::max() / 2))
+                                            ? std::numeric_limits<FwSizeType>::max()
+                                            : size * 2;
+        // POSIX APIs are implementation dependent when dealing with sizes larger than the signed return value
+        // thus we ensure a clear decision: BAD_SIZE
+        if (size > SSIZE_T_MAX_LIMIT) {
+            return BAD_SIZE;
+        }
+
+        for (FwSizeType i = 0; i < maximum && accumulated < size; i++) {
+            // char* for some posix implementations
+            ssize_t read_size = fs_read(this->m_handle.m_file_ptr, reinterpret_cast<CHAR*>(&buffer[accumulated]), static_cast<size_t>(size - accumulated));
+            // Non-interrupt error
+            if (read_size < 0) {
+                // int errno_store = errno;
+                int error = -read_size;
+                // Interrupted w/o read, try again
+                if (error == EINTR) {
+                    continue;
+                }
+                // status = Os::Posix::errno_to_file_status(errno_store);
+                status = NOT_SUPPORTED; // TODO
+                break;
+            }
+            // End-of-file
+            else if (read_size == 0) {
+                break;
+            }
+            accumulated += static_cast<FwSizeType>(read_size);
+            // Stop looping when we had a good read and are not waiting
+            if (!wait) {
+                break;
+            }
+        }
+        size = accumulated;
         return status;
     }
 
     ZephyrFile::Status ZephyrFile::write(const U8 *buffer, FwSizeType &size, ZephyrFile::WaitType wait) {
+        if(!this->_isOpen()) return NOT_OPENED;
         Status status = Status::NOT_SUPPORTED;
         return status;
     }
