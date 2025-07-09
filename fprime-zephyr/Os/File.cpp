@@ -3,11 +3,17 @@
 // \brief zephyr implementation for Os::File
 // ======================================================================
 // #include <Fw/Types/Assert.hpp>
+// #include <unistd.h>
 #include "fprime-zephyr/Os/File.hpp"
 #include <Fw/Types/Assert.hpp>
 
 #include <zephyr/kernel.h>
 #include <zephyr/fs/fs.h>
+
+
+#include <limits>           // for std::numeric_limits
+#include <type_traits>      // for std::make_unsigned
+// #include <Os/Posix/error.hpp> // TODO: Should either implement error.hpp or include Posix error.hpp
 
 // Remove later
 #include <cstdlib>
@@ -16,6 +22,11 @@
 namespace Os {
 namespace Zephyr {
 namespace File {
+
+    using UnsignedOffT = std::make_unsigned<off_t>::type;
+    static const UnsignedOffT OFF_T_MAX_LIMIT = static_cast<UnsignedOffT>(std::numeric_limits<off_t>::max());
+    using UnsignedSSizeT = std::make_unsigned<ssize_t>::type;
+    static const UnsignedSSizeT SSIZE_T_MAX_LIMIT = static_cast<UnsignedSSizeT>(std::numeric_limits<ssize_t>::max());
 
     ZephyrFile::ZephyrFile(const ZephyrFile& other) {
 
@@ -55,7 +66,7 @@ namespace File {
                 if(fs_stat(filepath, &entry) == 0 && ZephyrFile::OverwriteType::NO_OVERWRITE) {
                     k_free(file);
                     file = nullptr;
-                    status = Os::File::Status::FILE_EXISTS;
+                    status = FILE_EXISTS;
                     return status;
                 }
                 mode_flags = FS_O_WRITE | FS_O_CREATE | FS_O_TRUNC;
@@ -74,11 +85,11 @@ namespace File {
         if (file_status < 0) {
             DEBUG_PRINT("Error opening file %s: %d\n", filepath, file_status); // Remove later
 
-            
-            return NOT_OPENED; // Set file status to NOT_OPENED for now.
+            // status = Os::Posix::errno_to_file_status(-file_status);
+            status = NOT_OPENED;
+            return status; // Set file status to NOT_OPENED for now.
         }
 
-        // this->m_handle.m_file_descriptor = file_status;
         this->m_handle.m_file_ptr = file;
 
         return status;
@@ -95,26 +106,61 @@ namespace File {
         FW_ASSERT(res == 0, res);
         k_free(this->m_handle.m_file_ptr);
         this->m_handle.m_file_ptr = nullptr;
-        // this->m_handle.m_file_descriptor = ZephyrFileHandle::INVALID_FILE_DESCRIPTOR;
     }
 
     ZephyrFile::Status ZephyrFile::size(FwSizeType &size_result) {
-        Status status = Status::NOT_SUPPORTED;
+        if (!this->_isOpen()) return Os::File::Status::NOT_OPENED;
+
+        size_result = 0;
+        FwSizeType current_position = 0;
+        Status status = this->position(current_position);
+
+        if (status != OP_OK) return status;
+
+        FW_ASSERT(current_position <= OFF_T_MAX_LIMIT);
+
+        // Seek to end to determine file size
+        int seek_res = fs_seek(this->m_handle.m_file_ptr, 0, FS_SEEK_END);
+        if (seek_res < 0) {
+            return Os::File::Status::NOT_SUPPORTED; // TODO: Return correct status
+        }
+
+        FwSizeType end_of_file = 0;
+        status = this->position(end_of_file);
+        if (status != OP_OK) {
+            // Try to restore pointer before returning, even on error
+            fs_seek(this->m_handle.m_file_ptr, static_cast<off_t>(current_position), FS_SEEK_SET);
+            return status;
+        }
+
+        // Restore file pointer to original position
+        fs_seek(this->m_handle.m_file_ptr, static_cast<off_t>(current_position), FS_SEEK_SET);
+
+        size_result = static_cast<FwSizeType>(end_of_file);
         return status;
     }
 
     ZephyrFile::Status ZephyrFile::position(FwSizeType &position_result) {
-        // Status status = OP_OK;
-        // position_result = 0;
-        // off_t actual = ::fs_seek(this->m_handle.m_file_descriptor, 0, FS_SEEK_CUR);
-        // if (ZephyrFileHandle::ERROR_RETURN_VALUE == actual) {
-        //     int errno_store = errno;
-        //     // status = Os::Zephyr::errno_to_file_status(errno_store);
-        // }
-        // // Protected by static assertion (FwSizeType >= off_t)
-        // position_result = static_cast<FwSizeType>(actual);
-        // return status;
-        Status status = Status::NOT_SUPPORTED;
+        if(!this->_isOpen()) return NOT_OPENED;
+
+        Status status = OP_OK;
+        position_result = 0;
+        off_t res = fs_tell(this->m_handle.m_file_ptr);
+        if (res < 0) { // TODO
+            // status = Os::Posix::errno_to_file_status(-res);
+            switch (res) {
+                case -EBADF:
+                    status = NOT_OPENED; 
+                    break;
+                case -ENOTSUP:
+                    status = NOT_SUPPORTED;
+                    break;
+                default:
+                    status = NOT_SUPPORTED;
+            }
+        }
+        // Protected by static assertion (FwSizeType >= off_t)
+        position_result = static_cast<FwSizeType>(res);
         return status;
     }
 
