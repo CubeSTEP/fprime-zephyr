@@ -70,35 +70,34 @@ namespace File {
                 break;
         }
         fs_file_t_init(file);
-        int descriptor;
-        
-        descriptor = fs_open(file, filepath, mode_flags);
-        if (descriptor < 0) {
-            DEBUG_PRINT("Error opening file %s: %d\n", filepath, descriptor); // Remove later
+        int file_status = fs_open(file, filepath, mode_flags);
+        if (file_status < 0) {
+            DEBUG_PRINT("Error opening file %s: %d\n", filepath, file_status); // Remove later
 
             k_free(file);
             file = nullptr;
-            status = NOT_OPENED; // Set file status to NOT_OPENED for now
+            return NOT_OPENED; // Set file status to NOT_OPENED for now.
         }
 
-        this->m_handle.m_file_descriptor = descriptor;
+        // this->m_handle.m_file_descriptor = file_status;
+        this->m_handle.m_file_ptr = file;
 
         return status;
     }
 
     void ZephyrFile::close() {
-        if(ZephyrFileHandle::INVALID_FILE_DESCRIPTOR == this->m_handle.m_file_descriptor) {
+        // if(ZephyrFileHandle::INVALID_FILE_DESCRIPTOR == this->m_handle.m_file_descriptor) {
+        if(this->m_handle.m_file_ptr == nullptr) {
             return;
         }
-        struct fs_file_t *file = reinterpret_cast<struct fs_file_t *>(this->m_handle.m_file_descriptor);
-        int res = fs_close(file);
+        int res = fs_close(this->m_handle.m_file_ptr);
         if(res < 0) {
             DEBUG_PRINT("Error closing file: %d\n", res); // Remove Later
         }
         FW_ASSERT(res == 0, res);
-        k_free(file);
-        file = nullptr;
-        this->m_handle.m_file_descriptor = ZephyrFileHandle::INVALID_FILE_DESCRIPTOR;
+        k_free(this->m_handle.m_file_ptr);
+        this->m_handle.m_file_ptr = nullptr;
+        // this->m_handle.m_file_descriptor = ZephyrFileHandle::INVALID_FILE_DESCRIPTOR;
     }
 
     ZephyrFile::Status ZephyrFile::size(FwSizeType &size_result) {
@@ -107,6 +106,16 @@ namespace File {
     }
 
     ZephyrFile::Status ZephyrFile::position(FwSizeType &position_result) {
+        // Status status = OP_OK;
+        // position_result = 0;
+        // off_t actual = ::fs_seek(this->m_handle.m_file_descriptor, 0, FS_SEEK_CUR);
+        // if (ZephyrFileHandle::ERROR_RETURN_VALUE == actual) {
+        //     int errno_store = errno;
+        //     // status = Os::Zephyr::errno_to_file_status(errno_store);
+        // }
+        // // Protected by static assertion (FwSizeType >= off_t)
+        // position_result = static_cast<FwSizeType>(actual);
+        // return status;
         Status status = Status::NOT_SUPPORTED;
         return status;
     }

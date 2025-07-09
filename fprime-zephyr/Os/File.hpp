@@ -3,6 +3,8 @@
 // \brief zephyr implementation for Os::File, header and test definitions
 // ======================================================================
 #include <Os/File.hpp>
+#include <zephyr/fs/fs.h>
+
 #ifndef OS_ZEPHYR_FILE_HPP
 #define OS_ZEPHYR_FILE_HPP
 
@@ -13,11 +15,13 @@ namespace File {
 //! FileHandle class definition for zephyr implementations.
 //!
 struct ZephyrFileHandle : public FileHandle {
-    static constexpr int INVALID_FILE_DESCRIPTOR = -1;
+    // static constexpr int INVALID_FILE_DESCRIPTOR = -1;
     static constexpr int ERROR_RETURN_VALUE = -1;
 
     //! Zephyr file descriptor
-    int m_file_descriptor = INVALID_FILE_DESCRIPTOR;
+    // int m_file_descriptor = INVALID_FILE_DESCRIPTOR;
+    struct fs_file_t* m_file_ptr = nullptr;
+
 };
 
 //! \brief zephyr implementation of Os::File
