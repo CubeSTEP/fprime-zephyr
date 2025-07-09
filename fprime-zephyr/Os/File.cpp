@@ -74,8 +74,7 @@ namespace File {
         if (file_status < 0) {
             DEBUG_PRINT("Error opening file %s: %d\n", filepath, file_status); // Remove later
 
-            k_free(file);
-            file = nullptr;
+            
             return NOT_OPENED; // Set file status to NOT_OPENED for now.
         }
 
@@ -87,9 +86,8 @@ namespace File {
 
     void ZephyrFile::close() {
         // if(ZephyrFileHandle::INVALID_FILE_DESCRIPTOR == this->m_handle.m_file_descriptor) {
-        if(this->m_handle.m_file_ptr == nullptr) {
-            return;
-        }
+        if(!this->_isOpen()) return;
+
         int res = fs_close(this->m_handle.m_file_ptr);
         if(res < 0) {
             DEBUG_PRINT("Error closing file: %d\n", res); // Remove Later
@@ -147,6 +145,17 @@ namespace File {
 
     FileHandle* ZephyrFile::getHandle() {
         return &this->m_handle;
+    }
+
+    bool ZephyrFile::_isOpen() const {
+        return (this->m_handle.m_file_ptr != nullptr);
+    }
+
+    void ZephyrFile::_freeFile() {
+        if (this->m_handle.m_file_ptr == nullptr) return;
+
+        k_free(this->m_handle.m_file_ptr);
+        this->m_handle.m_file_ptr = nullptr;
     }
 
 } // namespace File

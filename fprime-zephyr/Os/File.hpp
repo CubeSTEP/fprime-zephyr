@@ -177,6 +177,10 @@ class ZephyrFile : public FileInterface {
   private:
     //! File handle for ZephyrFile
     ZephyrFileHandle m_handle;
+
+    bool _isOpen() const;
+
+    void _freeFile();
 };
 }  // namespace File
 }  // namespace Zephyr
