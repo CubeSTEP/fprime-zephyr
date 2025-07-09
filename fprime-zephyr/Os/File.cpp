@@ -99,11 +99,11 @@ namespace File {
         // if(ZephyrFileHandle::INVALID_FILE_DESCRIPTOR == this->m_handle.m_file_descriptor) {
         if(!this->_isOpen()) return;
 
-        int res = fs_close(this->m_handle.m_file_ptr);
-        if(res < 0) {
-            DEBUG_PRINT("Error closing file: %d\n", res); // Remove Later
+        int close_res = fs_close(this->m_handle.m_file_ptr);
+        if(close_res < 0) {
+            DEBUG_PRINT("Error closing file: %d\n", close_res); // Remove Later
         }
-        FW_ASSERT(res == 0, res);
+        FW_ASSERT(close_res == 0, close_res);
         k_free(this->m_handle.m_file_ptr);
         this->m_handle.m_file_ptr = nullptr;
     }
@@ -145,10 +145,10 @@ namespace File {
 
         Status status = OP_OK;
         position_result = 0;
-        off_t res = fs_tell(this->m_handle.m_file_ptr);
-        if (res < 0) { // TODO
+        off_t tell_res = fs_tell(this->m_handle.m_file_ptr);
+        if (tell_res < 0) { // TODO
             // status = Os::Posix::errno_to_file_status(-res);
-            switch (res) {
+            switch (tell_res) {
                 case -EBADF:
                     status = NOT_OPENED; 
                     break;
@@ -160,7 +160,7 @@ namespace File {
             }
         }
         // Protected by static assertion (FwSizeType >= off_t)
-        position_result = static_cast<FwSizeType>(res);
+        position_result = static_cast<FwSizeType>(tell_res);
         return status;
     }
 
@@ -176,9 +176,9 @@ namespace File {
         if (offset > std::numeric_limits<off_t>::max()) {
             status = BAD_SIZE;
         } else {
-            int res = fs_seek(this->m_handle.m_file_ptr, static_cast<off_t>(offset), (seekType == SeekType::ABSOLUTE) ? FS_SEEK_SET : FS_SEEK_CUR);
+            int seek_res = fs_seek(this->m_handle.m_file_ptr, static_cast<off_t>(offset), (seekType == SeekType::ABSOLUTE) ? FS_SEEK_SET : FS_SEEK_CUR);
             // int errno_store = errno;
-            if (res < 0) {
+            if (seek_res < 0) {
                 status = NOT_SUPPORTED; // TODO
                 // status = Os::Posix::errno_to_file_status(errno_store);
             } 
@@ -194,8 +194,8 @@ namespace File {
 
         Status status = OP_OK;
 
-        int res = fs_sync(this->m_handle.m_file_ptr);
-        if (res < 0) {
+        int sync_res = fs_sync(this->m_handle.m_file_ptr);
+        if (sync_res < 0) {
             status = NOT_SUPPORTED; // TODO
             // int errno_store = errno;
             // status = Os::Posix::errno_to_file_status(errno_store);
@@ -224,9 +224,9 @@ namespace File {
             // Non-interrupt error
             if (read_size < 0) {
                 // int errno_store = errno;
-                int error = -read_size;
+                int errno_store = -read_size;
                 // Interrupted w/o read, try again
-                if (error == EINTR) {
+                if (errno_store == EINTR) {
                     continue;
                 }
                 // status = Os::Posix::errno_to_file_status(errno_store);
@@ -249,7 +249,45 @@ namespace File {
 
     ZephyrFile::Status ZephyrFile::write(const U8 *buffer, FwSizeType &size, ZephyrFile::WaitType wait) {
         if(!this->_isOpen()) return NOT_OPENED;
-        Status status = Status::NOT_SUPPORTED;
+
+        Status status = OP_OK;
+        FwSizeType accumulated = 0;
+        // Loop up to 2 times for each by, bounded to prevent overflow
+        const FwSizeType maximum = (size > (std::numeric_limits<FwSizeType>::max() / 2))
+                                            ? std::numeric_limits<FwSizeType>::max()
+                                            : size * 2;
+        // POSIX APIs are implementation dependent when dealing with sizes larger than the signed return value
+        // thus we ensure a clear decision: BAD_SIZE
+        if (size > SSIZE_T_MAX_LIMIT) {
+            return BAD_SIZE;
+        }
+
+        for (FwSizeType i = 0; i < maximum && accumulated < size; i++) {
+            // char* for some posix implementations
+            ssize_t write_size = fs_write(this->m_handle.m_file_ptr, reinterpret_cast<const CHAR*>(&buffer[accumulated]), static_cast<size_t>(size - accumulated));
+            // Non-interrupt error
+            if (write_size < 0) {
+                int errno_store = -write_size;
+                // Interrupted w/o write, try again
+                if (errno_store == EINTR) {
+                    continue;
+                }
+                // status = Os::Posix::errno_to_file_status(errno_store);
+                status = NOT_SUPPORTED;
+                break;
+            }
+            accumulated += static_cast<FwSizeType>(write_size);
+        }
+        size = accumulated;
+        // When waiting, sync to disk
+        if (wait) {
+            int fsync_res = fs_sync(this->m_handle.m_file_ptr);
+            if (fsync_res < 0) {
+                // int errno_store = errno;
+                // status = Os::Posix::errno_to_file_status(errno_store);
+                status = NOT_SUPPORTED;
+            }
+        }
         return status;
     }
 
