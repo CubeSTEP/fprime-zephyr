@@ -49,8 +49,15 @@ ZephyrDirectory::Status ZephyrDirectory::open(const char* path, OpenMode mode) {
         status = Os::Zephyr::errno_to_directory_status(-opendir_res);
     }
     else {
+        size_t path_len = strlen(path) + 1;
+        this->m_handle.m_path = (char*)k_malloc(path_len);
+        if (this->m_handle.m_path == nullptr) { // Should not being able to store the path cause this function to fail? path is only needed for rewind()
+            k_free(dir);
+            return OTHER_ERROR;
+        }
+        strncpy((char*)this->m_handle.m_path, path, path_len);
+
         this->m_handle.m_dir_ptr = dir;
-        this->m_handle.m_path = path;
     }
 
     return status;
@@ -101,7 +108,17 @@ ZephyrDirectory::Status ZephyrDirectory::read(char * fileNameBuffer, FwSizeType 
 }
 
 void ZephyrDirectory::close() {
-    // no-op
+    if(!isOpen()) return;
+
+    fs_closedir(this->m_handle.m_dir_ptr);
+
+    k_free(this->m_handle.m_dir_ptr);
+    this->m_handle.m_dir_ptr = nullptr;
+
+    if (this->m_handle.m_path != nullptr) {
+        k_free((void*)this->m_handle.m_path);
+        this->m_handle.m_path = nullptr;
+    }
 }
 
 DirectoryHandle* ZephyrDirectory::getHandle() {
