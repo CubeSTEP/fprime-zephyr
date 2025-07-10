@@ -1,5 +1,16 @@
 cmake_minimum_required(VERSION 3.13)
 
+register_fprime_module(
+    Os_Zephyr_Shared
+  SOURCES
+    "${CMAKE_CURRENT_LIST_DIR}/error.cpp"
+  HEADERS
+    "${CMAKE_CURRENT_LIST_DIR}/error.hpp"
+  DEPENDS
+    Fw_Time
+    Fw_Types
+)
+
 register_fprime_implementation(
         Os_Task_Zephyr
     SOURCES
@@ -14,7 +25,7 @@ register_fprime_implementation(
         Os_Task
 )
 
-register_os_implementation("File;FileSystem;Directory" Zephyr)
+register_os_implementation("File;FileSystem;Directory" Zephyr Os_Zephyr_Shared)
 
 # register_fprime_implementation(
 #         Os_Directory_Zephyr
