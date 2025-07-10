@@ -13,7 +13,7 @@
 
 #include <limits>           // for std::numeric_limits
 #include <type_traits>      // for std::make_unsigned
-// #include <Os/Posix/error.hpp> // TODO: Should either implement error.hpp or include Posix error.hpp
+#include "fprime-zephyr/Os/error.hpp" // TODO: Should either implement error.hpp or include Posix error.hpp
 
 // Remove later
 #include <cstdlib>
@@ -81,12 +81,11 @@ namespace File {
                 break;
         }
         fs_file_t_init(file);
-        int file_status = fs_open(file, filepath, mode_flags);
-        if (file_status < 0) {
-            DEBUG_PRINT("Error opening file %s: %d\n", filepath, file_status); // Remove later
+        int open_res = fs_open(file, filepath, mode_flags);
+        if (open_res < 0) {
+            DEBUG_PRINT("Error opening file %s: %d\n", filepath, open_res); // Remove later
 
-            // status = Os::Posix::errno_to_file_status(-file_status);
-            status = NOT_OPENED;
+            status = Os::Zephyr::errno_to_file_status(-open_res);
             return status; // Set file status to NOT_OPENED for now.
         }
 
@@ -122,7 +121,8 @@ namespace File {
         // Seek to end to determine file size
         int seek_res = fs_seek(this->m_handle.m_file_ptr, 0, FS_SEEK_END);
         if (seek_res < 0) {
-            return Os::File::Status::NOT_SUPPORTED; // TODO: Return correct status
+            status = Os::Zephyr::errno_to_file_status(-seek_res);
+            return status;
         }
 
         FwSizeType end_of_file = 0;
@@ -146,18 +146,8 @@ namespace File {
         Status status = OP_OK;
         position_result = 0;
         off_t tell_res = fs_tell(this->m_handle.m_file_ptr);
-        if (tell_res < 0) { // TODO
-            // status = Os::Posix::errno_to_file_status(-res);
-            switch (tell_res) {
-                case -EBADF:
-                    status = NOT_OPENED; 
-                    break;
-                case -ENOTSUP:
-                    status = NOT_SUPPORTED;
-                    break;
-                default:
-                    status = NOT_SUPPORTED;
-            }
+        if (tell_res < 0) {
+            status = Os::Zephyr::errno_to_file_status(-tell_res);
         }
         // Protected by static assertion (FwSizeType >= off_t)
         position_result = static_cast<FwSizeType>(tell_res);
@@ -224,12 +214,8 @@ namespace File {
             int seek_res = fs_seek(this->m_handle.m_file_ptr, static_cast<off_t>(offset), (seekType == SeekType::ABSOLUTE) ? FS_SEEK_SET : FS_SEEK_CUR);
             // int errno_store = errno;
             if (seek_res < 0) {
-                status = NOT_SUPPORTED; // TODO
-                // status = Os::Posix::errno_to_file_status(errno_store);
+                status = Os::Zephyr::errno_to_file_status(-seek_res);
             } 
-            // else if ((seekType == SeekType::ABSOLUTE) && (actual != offset)) {
-            //     status = Os::File::Status::OTHER_ERROR;
-            // }
         }
         return status;
     }
@@ -241,9 +227,7 @@ namespace File {
 
         int sync_res = fs_sync(this->m_handle.m_file_ptr);
         if (sync_res < 0) {
-            status = NOT_SUPPORTED; // TODO
-            // int errno_store = errno;
-            // status = Os::Posix::errno_to_file_status(errno_store);
+            status = Os::Zephyr::errno_to_file_status(-sync_res);
         }
         return status;
     }
@@ -274,8 +258,7 @@ namespace File {
                 if (errno_store == EINTR) {
                     continue;
                 }
-                // status = Os::Posix::errno_to_file_status(errno_store);
-                status = NOT_SUPPORTED; // TODO
+                status = Os::Zephyr::errno_to_file_status(-errno_store);
                 break;
             }
             // End-of-file
@@ -317,8 +300,7 @@ namespace File {
                 if (errno_store == EINTR) {
                     continue;
                 }
-                // status = Os::Posix::errno_to_file_status(errno_store);
-                status = NOT_SUPPORTED;
+                status = Os::Zephyr::errno_to_file_status(-errno_store);
                 break;
             }
             accumulated += static_cast<FwSizeType>(write_size);
@@ -328,9 +310,7 @@ namespace File {
         if (wait) {
             int fsync_res = fs_sync(this->m_handle.m_file_ptr);
             if (fsync_res < 0) {
-                // int errno_store = errno;
-                // status = Os::Posix::errno_to_file_status(errno_store);
-                status = NOT_SUPPORTED;
+                status = Os::Zephyr::errno_to_file_status(-fsync_res);
             }
         }
         return status;
