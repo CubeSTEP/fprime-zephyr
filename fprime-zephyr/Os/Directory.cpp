@@ -39,6 +39,7 @@ ZephyrDirectory::Status ZephyrDirectory::open(const char* path, OpenMode mode) {
         }
     }
 
+    fs_dir_t_init(dir);
     int opendir_res = fs_opendir(dir, path);
 
     if(opendir_res < 0) {
@@ -48,13 +49,33 @@ ZephyrDirectory::Status ZephyrDirectory::open(const char* path, OpenMode mode) {
     }
     else {
         this->m_handle.m_dir_ptr = dir;
+        this->m_handle.m_path = path; // Copy path instead of setting pointer?
     }
 
     return status;
 }
 
+bool ZephyrDirectory::isOpen() const {
+    return this->m_handle.m_dir_ptr != nullptr;
+}
+
 ZephyrDirectory::Status ZephyrDirectory::rewind() {
-    return Status::NOT_SUPPORTED;
+    if (!isOpen() || !this->m_handle.m_path[0]) return NOT_OPENED;
+
+    int closedir_res = fs_closedir(this->m_handle.m_dir_ptr);
+
+    if(closedir_res < 0) {
+        return Os::Zephyr::errno_to_directory_status(-closedir_res);
+    }
+
+    int opendir_res = fs_opendir(this->m_handle.m_dir_ptr, this->m_handle.m_path);
+
+    if(opendir_res < 0) {
+        // Maybe set zdp & path pointers to nullptr and ""
+        return Os::Zephyr::errno_to_directory_status(-opendir_res);
+    }
+
+    return OP_OK;
 }
 
 ZephyrDirectory::Status ZephyrDirectory::read(char * fileNameBuffer, FwSizeType bufSize) {

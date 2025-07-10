@@ -14,6 +14,7 @@ namespace Directory {
 
 struct ZephyrDirectoryHandle : public DirectoryHandle {
   struct fs_dir_t* m_dir_ptr = nullptr;
+  char* m_path = "";
 };
 
 //! \brief zephyr implementation of Os::Directory
@@ -53,7 +54,7 @@ class ZephyrDirectory : public DirectoryInterface {
 
     //! \brief Check if Directory is open or not
     //! \return true if Directory is open, false otherwise
-    bool isOpen();
+    bool isOpen() const;
 
     //! \brief Rewind directory stream
     //!
