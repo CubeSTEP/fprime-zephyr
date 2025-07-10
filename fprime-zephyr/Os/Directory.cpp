@@ -3,6 +3,7 @@
 // \brief zephyr implementation for Os::Directory
 // ======================================================================
 #include <Fw/Types/Assert.hpp>
+#include <Fw/Types/StringUtils.hpp>
 #include "fprime-zephyr/Os/Directory.hpp"
 #include "fprime-zephyr/Os/error.hpp"
 #include <zephyr/fs/fs.h>
@@ -49,7 +50,7 @@ ZephyrDirectory::Status ZephyrDirectory::open(const char* path, OpenMode mode) {
     }
     else {
         this->m_handle.m_dir_ptr = dir;
-        this->m_handle.m_path = path; // Copy path instead of setting pointer?
+        this->m_handle.m_path = path;
     }
 
     return status;
@@ -79,7 +80,24 @@ ZephyrDirectory::Status ZephyrDirectory::rewind() {
 }
 
 ZephyrDirectory::Status ZephyrDirectory::read(char * fileNameBuffer, FwSizeType bufSize) {
-    return Status::NOT_SUPPORTED;
+    FW_ASSERT(fileNameBuffer);
+    Status status = Status::OP_OK;
+
+    struct fs_dirent direntData;
+
+    int readdir_res = fs_readdir(this->m_handle.m_dir_ptr, &direntData);
+
+    if(readdir_res < 0) {
+        status = Os::Zephyr::errno_to_directory_status(-readdir_res);
+    }
+    else if(direntData.name[0] == 0) {
+        status = NO_MORE_FILES;
+    }
+    else {
+        Fw::StringUtils::string_copy(fileNameBuffer, direntData.name, bufSize);
+    }
+
+    return status;
 }
 
 void ZephyrDirectory::close() {

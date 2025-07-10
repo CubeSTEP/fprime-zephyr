@@ -14,7 +14,7 @@ namespace Directory {
 
 struct ZephyrDirectoryHandle : public DirectoryHandle {
   struct fs_dir_t* m_dir_ptr = nullptr;
-  char* m_path = "";
+  const char* m_path = nullptr;
 };
 
 //! \brief zephyr implementation of Os::Directory
