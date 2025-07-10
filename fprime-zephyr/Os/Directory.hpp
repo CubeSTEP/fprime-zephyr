@@ -5,12 +5,16 @@
 #ifndef OS_ZEPHYR_DIRECTORY_HPP
 #define OS_ZEPHYR_DIRECTORY_HPP
 
-#include "Os/Directory.hpp"
+#include <Os/Directory.hpp>
+#include <zephyr/fs/fs.h>
+
 namespace Os {
 namespace Zephyr {
 namespace Directory {
 
-struct ZephyrDirectoryHandle : public DirectoryHandle {};
+struct ZephyrDirectoryHandle : public DirectoryHandle {
+  struct fs_dir_t* m_dir_ptr = nullptr;
+};
 
 //! \brief zephyr implementation of Os::Directory
 //!
