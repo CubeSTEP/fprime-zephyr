@@ -3,6 +3,7 @@
 // \brief zephyr implementation for Os::File
 // ======================================================================
 #include "fprime-zephyr/Os/FileSystem.hpp"
+#include "fprime-zephyr/Os/error.hpp"
 #include <zephyr/fs/fs.h>
 
 namespace Os {
@@ -14,7 +15,7 @@ ZephyrFileSystem::Status ZephyrFileSystem::_removeDirectory(const char* path) {
     int unlink_res = fs_unlink(path);
 
     if(unlink_res < 0) {
-        status = NOT_SUPPORTED; // TODO
+        status = Os::Zephyr::errno_to_filesystem_status(-unlink_res);
     }
     return status;
 }
@@ -28,7 +29,7 @@ ZephyrFileSystem::Status ZephyrFileSystem::_rename(const char* originPath, const
     int unlink_res = fs_rename(originPath, destPath);
 
     if(unlink_res < 0) {
-        status = NOT_SUPPORTED; // TODO
+        status = Os::Zephyr::errno_to_filesystem_status(-unlink_res);
     }
     return status;
 }

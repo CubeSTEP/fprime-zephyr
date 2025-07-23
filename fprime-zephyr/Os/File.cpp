@@ -10,7 +10,6 @@
 #include <zephyr/kernel.h>
 #include <zephyr/fs/fs.h>
 
-
 #include <limits>           // for std::numeric_limits
 #include <type_traits>      // for std::make_unsigned
 #include "fprime-zephyr/Os/error.hpp" // TODO: Should either implement error.hpp or include Posix error.hpp
@@ -29,7 +28,9 @@ namespace File {
     static const UnsignedSSizeT SSIZE_T_MAX_LIMIT = static_cast<UnsignedSSizeT>(std::numeric_limits<ssize_t>::max());
 
     ZephyrFile::ZephyrFile(const ZephyrFile& other) {
-
+        // this->m_handle.m_file_ptr = fcntl(other.m_handle.m_file_ptr, F_DUPFD, 0);
+        // this->m_handle.m_file_ptr = open()
+        this->m_handle.m_file_ptr = other.m_handle.m_file_ptr;
     }
 
     // ZephyrFile::~ZephyrFile() {

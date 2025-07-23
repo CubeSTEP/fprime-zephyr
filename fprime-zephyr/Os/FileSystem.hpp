@@ -20,7 +20,7 @@ struct ZephyrFileSystemHandle : public FileSystemHandle {};
 class ZephyrFileSystem : public FileSystemInterface {
   public:
     //! \brief constructor
-    ZephyrFileSystem() = default;
+    ZephyrFileSystem();
 
     //! \brief destructor
     ~ZephyrFileSystem() override = default;
