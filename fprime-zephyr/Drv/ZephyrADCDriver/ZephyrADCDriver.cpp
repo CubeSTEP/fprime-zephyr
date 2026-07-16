@@ -4,7 +4,7 @@
 // \brief  cpp file for ZephyrADCDriver component implementation class
 // ======================================================================
 
-#include "Components/ZephyrADCDriver/ZephyrADCDriver.hpp"
+#include "fprime-zephyr/Drv/ZephyrADCDriver/ZephyrADCDriver.hpp"
 #include <zephyr/drivers/adc.h>
 
 namespace Zephyr {

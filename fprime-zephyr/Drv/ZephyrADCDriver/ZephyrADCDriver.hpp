@@ -9,7 +9,7 @@
 
 #include <atomic>
 
-#include "Components/ZephyrADCDriver/ZephyrADCDriverComponentAc.hpp"
+#include "fprime-zephyr/Drv/ZephyrADCDriver/ZephyrADCDriverComponentAc.hpp"
 
 struct adc_dt_spec;
 
