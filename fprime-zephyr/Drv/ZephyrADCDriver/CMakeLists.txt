@@ -19,8 +19,9 @@ register_fprime_library(
         "${CMAKE_CURRENT_LIST_DIR}/ZephyrADCDriver.fpp"
     SOURCES
         "${CMAKE_CURRENT_LIST_DIR}/ZephyrADCDriver.cpp"
-#   DEPENDS
-#       MyPackage_MyOtherModule
+    DEPENDS
+        Fw_Buffer
+        Fw_Ports_Signal
 )
 
 ### Unit Tests ###

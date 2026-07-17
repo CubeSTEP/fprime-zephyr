@@ -10,6 +10,7 @@
 #include <atomic>
 
 #include "fprime-zephyr/Drv/ZephyrADCDriver/ZephyrADCDriverComponentAc.hpp"
+#include "Fw/Buffer/Buffer.hpp"
 
 struct adc_dt_spec;
 
@@ -26,10 +27,7 @@ class ZephyrADCDriver final : public ZephyrADCDriverComponentBase {
     );
 
     //! Configuration for ZephyrADCDriver 
-    void configure(const struct adc_dt_spec *adc_dev_config, 
-                   U16 *buffer, 
-                   size_t buffer_size
-                  );
+    void configure(const struct adc_dt_spec* adc_dev_config);
 
     //! Destroy ZephyrADCDriver object
     ~ZephyrADCDriver();
@@ -56,13 +54,12 @@ class ZephyrADCDriver final : public ZephyrADCDriverComponentBase {
     const struct adc_dt_spec* m_adc_dev_config = nullptr; 
 
     //!< ADC sample buffer
-    U16* m_buffer = nullptr;
+    const U16 m_dataBuffer[1] = {0};
+    Fw::Buffer m_adcBuffer{reinterpret_cast<U8*>(const_cast<U16*>(m_dataBuffer)), sizeof(m_dataBuffer)};
 
-    //!< ADC sample buffer size
-    size_t m_buffer_size = 0;
-    
     //!< Flag to indicate if ADC is continuous polling enabled or disabled
-    std::atomic<U8> m_adc_enabled{static_cast<U8>(Zephyr::ZephyrADCDriverState::ADC_DISABLED)};
+    std::atomic<U8> m_adc_enabled{static_cast<U8>(Zephyr::ZephyrADCPollOperation::ADC_POLL_DISABLED)};
+
     
     // ----------------------------------------------------------------------
     // Handler implementations for typed input ports
@@ -72,7 +69,7 @@ class ZephyrADCDriver final : public ZephyrADCDriverComponentBase {
     //!
     //! Port to enable or disable the ADC
     void enableADCSchedule_handler(FwIndexType portNum,  //!< The port number
-                                   const Zephyr::ZephyrADCDriverState& value) override;
+                                   const Zephyr::ZephyrADCPollOperation& value) override;
 
     //! Handler implementation for poll
     void poll_handler(FwIndexType portNum,  //!< The port number
@@ -82,8 +79,8 @@ class ZephyrADCDriver final : public ZephyrADCDriverComponentBase {
     //! Handler implementation for readADC
     //!
     //! Port to read the ADC value
-    void readADC_handler(FwIndexType portNum,  //!< The port number
-                         const Zephyr::ZephyrADCDriverState& value) override;
+    void readADC_handler(FwIndexType portNum  //!< The port number
+                         ) override;
 
   private:
     // ----------------------------------------------------------------------
@@ -94,7 +91,7 @@ class ZephyrADCDriver final : public ZephyrADCDriverComponentBase {
     void ENABLE_ADC_Schedule_cmdHandler(
         FwOpcodeType opCode,                 //!< The opcode
         U32 cmdSeq,                          //!< The command sequence number
-        Zephyr::ZephyrADCDriverState enable  //!< Indicates whether the ADC is enabled or disabled
+        Zephyr::ZephyrADCPollOperation enable  //!< Indicates whether the ADC is enabled or disabled
         ) override;   
 };
 

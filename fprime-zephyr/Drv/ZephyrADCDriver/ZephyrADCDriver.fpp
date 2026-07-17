@@ -1,21 +1,21 @@
 module Zephyr {
     
     # @ Zephyr ADC Driver State
-    enum ZephyrADCDriverState: U8 {
-        ADC_DISABLED = 0,
-        ADC_ENABLED = 1
+    enum ZephyrADCPollOperation: U8 {
+        ADC_POLL_DISABLED = 0,
+        ADC_POLL_ENABLED = 1
     }
 
     # @ Port Types
     port ADCMvValue(value: U32)
     port ADCRawValue(value: U16)
-    port ZephyrADCDriverStatePort(value: ZephyrADCDriverState)
+    port ZephyrADCPollOperationPort(value: ZephyrADCPollOperation)
 
     @ Zephyr ADC Driver
     passive component ZephyrADCDriver {
 
         sync command ENABLE_ADC_Schedule(
-            enable: ZephyrADCDriverState @< Indicates whether the ADC is enabled or disabled
+            enable: ZephyrADCPollOperation @< Indicates whether the ADC is enabled or disabled
         )
         
         # @ Last value read from the ADC in millivolts
@@ -26,11 +26,11 @@ module Zephyr {
         
         # @ Example event
         # event ExampleStateEvent(example_state: Fw.On) severity activity high id 0 format "State set to {}"
-        event setADCReadState($enable: ZephyrADCDriverState) \
+        event setADCReadState($enable: ZephyrADCPollOperation) \
             severity activity high \
             format "Enable ADC set set to state: {}"
         
-        event configurationError($error: ZephyrADCDriverState) \
+        event configurationError($error: ZephyrADCPollOperation) \
             severity warning high \
             format "ADC configuration error; State Not Enabled; Curr State: {}"
         
@@ -41,9 +41,9 @@ module Zephyr {
         # @ Schedule port to be read on a given rate group
         sync input port poll: Svc.Sched
 
-        guarded input port enableADCSchedule: ZephyrADCDriverStatePort @< Port to enable or disable the ADC
+        guarded input port enableADCSchedule: ZephyrADCPollOperationPort @< Port to enable or disable the ADC
 
-        guarded input port readADC: ZephyrADCDriverStatePort @< Port to read the ADC value
+        guarded input port readADC: Fw.Signal @< Signal the driver to read one ADC sample
 
         output port adcMvValue: ADCMvValue @< Port to output the ADC value in millivolts
         
